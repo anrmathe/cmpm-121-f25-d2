@@ -14,6 +14,7 @@ if (!ctx) throw new Error("Could not get 2D context");
 // --- Data model ---
 type Point = { x: number; y: number };
 const drawings: Point[][] = []; // array of strokes, each stroke = array of points
+const redoStack: Point[][] = []; // redo stack
 let currentStroke: Point[] | null = null;
 
 const cursor = { active: false, x: 0, y: 0 };
@@ -25,6 +26,7 @@ canvas.addEventListener("mousedown", (e) => {
 
   currentStroke = [{ x: cursor.x, y: cursor.y }];
   drawings.push(currentStroke);
+  redoStack.length = 0;
   console.log("Started new stroke at", cursor.x, cursor.y);
   canvas.dispatchEvent(new Event("drawing-changed"));
 });
@@ -66,5 +68,32 @@ document.body.append(clearButton);
 
 clearButton.addEventListener("click", () => {
   drawings.length = 0;
+  redoStack.length = 0;
   canvas.dispatchEvent(new Event("drawing-changed"));
+});
+
+const undoButton = document.createElement("button");
+undoButton.innerHTML = "undo";
+document.body.append(undoButton);
+
+undoButton.addEventListener("click", () => {
+  if (drawings.length === 0) return;
+  const undoneStroke = drawings.pop()!;
+  if (undoneStroke) {
+    redoStack.push(undoneStroke);
+    canvas.dispatchEvent(new Event("drawing-changed"));
+  }
+});
+
+const redoButton = document.createElement("button");
+redoButton.innerHTML = "redo";
+document.body.append(redoButton);
+
+redoButton.addEventListener("click", () => {
+  if (redoStack.length === 0) return;
+  const redoneStroke = redoStack.pop()!;
+  if (redoneStroke) {
+    drawings.push(redoneStroke);
+    canvas.dispatchEvent(new Event("drawing-changed"));
+  }
 });
