@@ -2,9 +2,11 @@ import "./style.css";
 
 class MarkerLine {
   points: Point[];
+  thickness: number;
 
-  constructor(startX: number, startY: number) {
+  constructor(startX: number, startY: number, thickness: number) {
     this.points = [{ x: startX, y: startY }];
+    this.thickness = thickness;
   }
 
   drag(x: number, y: number) {
@@ -18,6 +20,7 @@ class MarkerLine {
     for (let i = 1; i < this.points.length; i++) {
       ctx.lineTo(this.points[i].x, this.points[i].y);
     }
+    ctx.lineWidth = this.thickness;
     ctx.stroke();
   }
 }
@@ -38,6 +41,7 @@ type Point = { x: number; y: number };
 const drawings: MarkerLine[] = [];
 const redoStack: MarkerLine[] = [];
 let currentStroke: MarkerLine | null = null;
+let currentThickness = 2;
 
 const cursor = { active: false, x: 0, y: 0 };
 
@@ -46,7 +50,8 @@ canvas.addEventListener("mousedown", (e) => {
   cursor.x = e.offsetX;
   cursor.y = e.offsetY;
 
-  currentStroke = new MarkerLine(cursor.x, cursor.y);
+  currentStroke = new MarkerLine(cursor.x, cursor.y, currentThickness);
+
   drawings.push(currentStroke);
   redoStack.length = 0;
   console.log("Started new stroke at", cursor.x, cursor.y);
@@ -113,3 +118,30 @@ redoButton.addEventListener("click", () => {
     canvas.dispatchEvent(new Event("drawing-changed"));
   }
 });
+
+const thinButton = document.createElement("button");
+thinButton.innerHTML = "thin";
+document.body.append(thinButton);
+
+const thickButton = document.createElement("button");
+thickButton.innerHTML = "thick";
+document.body.append(thickButton);
+
+function updateSelectedTool(selectedButton: HTMLButtonElement) {
+  thinButton.classList.remove("selectedTool");
+  thickButton.classList.remove("selectedTool");
+  selectedButton.classList.add("selectedTool");
+}
+
+thinButton.addEventListener("click", () => {
+  currentThickness = 2;
+  updateSelectedTool(thinButton);
+});
+
+thickButton.addEventListener("click", () => {
+  currentThickness = 6;
+  updateSelectedTool(thickButton);
+});
+
+// Start with thin selected
+updateSelectedTool(thinButton);

@@ -9,3 +9,24 @@ canvas {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   display: block;
 }
+
+button {
+  margin: 4px;
+  padding: 6px 12px;
+}
+
+.selectedTool {
+  background-color: lightblue;
+  border: 2px solid blue;
+}
+.thicknessButton {
+  margin: 2px;
+  padding: 4px 8px;
+}
+.selectedThickness {
+  background-color: lightgreen;
+  border: 2px solid green;
+}
+.thicknessContainer {
+  margin-top: 8px;
+}
