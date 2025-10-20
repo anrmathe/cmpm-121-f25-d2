@@ -1,5 +1,27 @@
 import "./style.css";
 
+class MarkerLine {
+  points: Point[];
+
+  constructor(startX: number, startY: number) {
+    this.points = [{ x: startX, y: startY }];
+  }
+
+  drag(x: number, y: number) {
+    this.points.push({ x, y });
+  }
+
+  display(ctx: CanvasRenderingContext2D) {
+    if (this.points.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(this.points[0].x, this.points[0].y);
+    for (let i = 1; i < this.points.length; i++) {
+      ctx.lineTo(this.points[i].x, this.points[i].y);
+    }
+    ctx.stroke();
+  }
+}
+
 document.body.innerHTML = `
   <h1> Annette's D2 Assignment </h1>
 `;
@@ -13,9 +35,9 @@ if (!ctx) throw new Error("Could not get 2D context");
 
 // --- Data model ---
 type Point = { x: number; y: number };
-const drawings: Point[][] = []; // array of strokes, each stroke = array of points
-const redoStack: Point[][] = []; // redo stack
-let currentStroke: Point[] | null = null;
+const drawings: MarkerLine[] = [];
+const redoStack: MarkerLine[] = [];
+let currentStroke: MarkerLine | null = null;
 
 const cursor = { active: false, x: 0, y: 0 };
 
@@ -24,7 +46,7 @@ canvas.addEventListener("mousedown", (e) => {
   cursor.x = e.offsetX;
   cursor.y = e.offsetY;
 
-  currentStroke = [{ x: cursor.x, y: cursor.y }];
+  currentStroke = new MarkerLine(cursor.x, cursor.y);
   drawings.push(currentStroke);
   redoStack.length = 0;
   console.log("Started new stroke at", cursor.x, cursor.y);
@@ -35,7 +57,7 @@ canvas.addEventListener("mousemove", (e) => {
   if (!cursor.active || !currentStroke) return;
   cursor.x = e.offsetX;
   cursor.y = e.offsetY;
-  currentStroke.push({ x: cursor.x, y: cursor.y });
+  currentStroke.drag(cursor.x, cursor.y);
   canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
@@ -52,13 +74,7 @@ canvas.addEventListener("drawing-changed", () => {
   ctx.lineCap = "round";
 
   for (const stroke of drawings) {
-    if (stroke.length < 2) continue;
-    ctx.beginPath();
-    ctx.moveTo(stroke[0].x, stroke[0].y);
-    for (let i = 1; i < stroke.length; i++) {
-      ctx.lineTo(stroke[i].x, stroke[i].y);
-    }
-    ctx.stroke();
+    stroke.display(ctx);
   }
 });
 
