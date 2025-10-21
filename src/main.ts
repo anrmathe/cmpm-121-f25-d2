@@ -21,6 +21,28 @@ class MarkerLine {
       ctx.lineTo(this.points[i].x, this.points[i].y);
     }
     ctx.lineWidth = this.thickness;
+    ctx.lineCap = "round";
+    ctx.stroke();
+  }
+}
+
+// ⭐ Tool preview command
+class ToolPreview {
+  x: number;
+  y: number;
+  thickness: number;
+
+  constructor(x: number, y: number, thickness: number) {
+    this.x = x;
+    this.y = y;
+    this.thickness = thickness;
+  }
+
+  draw(ctx: CanvasRenderingContext2D) {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.thickness / 2, 0, Math.PI * 2);
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 1;
     ctx.stroke();
   }
 }
@@ -33,7 +55,7 @@ canvas.width = 256;
 canvas.height = 256;
 document.body.append(canvas);
 
-const ctx = canvas.getContext("2d");
+const ctx = canvas.getContext("2d")!;
 if (!ctx) throw new Error("Could not get 2D context");
 
 // --- Data model ---
@@ -42,6 +64,7 @@ const drawings: MarkerLine[] = [];
 const redoStack: MarkerLine[] = [];
 let currentStroke: MarkerLine | null = null;
 let currentThickness = 2;
+let currentPreview: ToolPreview | null = null; // ⭐ preview object
 
 const cursor = { active: false, x: 0, y: 0 };
 
@@ -51,38 +74,51 @@ canvas.addEventListener("mousedown", (e) => {
   cursor.y = e.offsetY;
 
   currentStroke = new MarkerLine(cursor.x, cursor.y, currentThickness);
-
   drawings.push(currentStroke);
   redoStack.length = 0;
-  console.log("Started new stroke at", cursor.x, cursor.y);
   canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
 canvas.addEventListener("mousemove", (e) => {
-  if (!cursor.active || !currentStroke) return;
   cursor.x = e.offsetX;
   cursor.y = e.offsetY;
-  currentStroke.drag(cursor.x, cursor.y);
-  canvas.dispatchEvent(new Event("drawing-changed"));
+
+  if (cursor.active && currentStroke) {
+    currentStroke.drag(cursor.x, cursor.y);
+    canvas.dispatchEvent(new Event("drawing-changed"));
+  } else {
+    // ⭐ Update preview when mouse moves but not drawing
+    currentPreview = new ToolPreview(cursor.x, cursor.y, currentThickness);
+    canvas.dispatchEvent(new Event("tool-moved"));
+  }
 });
 
-canvas.addEventListener("mouseup", (_e) => {
+canvas.addEventListener("mouseup", () => {
   cursor.active = false;
   currentStroke = null;
 });
-
-canvas.addEventListener("drawing-changed", () => {
+canvas.style.cursor = "crosshair";
+// --- Redraw logic ---
+function redraw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 2;
   ctx.lineCap = "round";
 
   for (const stroke of drawings) {
     stroke.display(ctx);
   }
-});
 
+  // ⭐ Draw preview if mouse not pressed
+  if (!cursor.active && currentPreview) {
+    currentPreview.draw(ctx);
+  }
+}
+
+canvas.addEventListener("drawing-changed", redraw);
+
+// ⭐ Tool-moved event: same as drawing-changed but triggered differently
+canvas.addEventListener("tool-moved", redraw);
+
+// --- Buttons ---
 const clearButton = document.createElement("button");
 clearButton.innerHTML = "clear";
 document.body.append(clearButton);
@@ -100,10 +136,8 @@ document.body.append(undoButton);
 undoButton.addEventListener("click", () => {
   if (drawings.length === 0) return;
   const undoneStroke = drawings.pop()!;
-  if (undoneStroke) {
-    redoStack.push(undoneStroke);
-    canvas.dispatchEvent(new Event("drawing-changed"));
-  }
+  redoStack.push(undoneStroke);
+  canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
 const redoButton = document.createElement("button");
@@ -113,10 +147,8 @@ document.body.append(redoButton);
 redoButton.addEventListener("click", () => {
   if (redoStack.length === 0) return;
   const redoneStroke = redoStack.pop()!;
-  if (redoneStroke) {
-    drawings.push(redoneStroke);
-    canvas.dispatchEvent(new Event("drawing-changed"));
-  }
+  drawings.push(redoneStroke);
+  canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
 const thinButton = document.createElement("button");
