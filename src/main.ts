@@ -1,117 +1,106 @@
 import "./style.css";
 
-// ⭐ Sticker preview command
-class StickerPreview {
+// ✅ Use interfaces to define shapes—no classes
+interface Point {
   x: number;
   y: number;
-  sticker: string;
-
-  constructor(x: number, y: number, sticker: string) {
-    this.x = x;
-    this.y = y;
-    this.sticker = sticker;
-  }
-
-  draw(ctx: CanvasRenderingContext2D) {
-    ctx.font = "24px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(this.sticker, this.x, this.y);
-  }
 }
-
-// ⭐ Sticker command
-class Sticker {
-  x: number;
-  y: number;
-  sticker: string;
-
-  constructor(x: number, y: number, sticker: string) {
-    this.x = x;
-    this.y = y;
-    this.sticker = sticker;
-  }
-
-  display(ctx: CanvasRenderingContext2D) {
-    ctx.font = "24px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(this.sticker, this.x, this.y);
-  }
-}
-
-// --- Marker class ---
-class MarkerLine {
+interface MarkerLine {
   points: Point[];
   thickness: number;
-
-  constructor(startX: number, startY: number, thickness: number) {
-    this.points = [{ x: startX, y: startY }];
-    this.thickness = thickness;
-  }
-
-  drag(x: number, y: number) {
-    this.points.push({ x, y });
-  }
-
-  display(ctx: CanvasRenderingContext2D) {
-    if (this.points.length < 2) return;
-    ctx.beginPath();
-    ctx.moveTo(this.points[0].x, this.points[0].y);
-    for (let i = 1; i < this.points.length; i++) {
-      ctx.lineTo(this.points[i].x, this.points[i].y);
-    }
-    ctx.lineWidth = this.thickness;
-    ctx.lineCap = "round";
-    ctx.stroke();
-  }
 }
-
-// ⭐ Tool preview command
-class ToolPreview {
+interface Sticker {
+  x: number;
+  y: number;
+  sticker: string;
+}
+interface StickerPreview {
+  x: number;
+  y: number;
+  sticker: string;
+}
+interface ToolPreview {
   x: number;
   y: number;
   thickness: number;
-
-  constructor(x: number, y: number, thickness: number) {
-    this.x = x;
-    this.y = y;
-    this.thickness = thickness;
-  }
-
-  draw(ctx: CanvasRenderingContext2D) {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.thickness / 2, 0, Math.PI * 2);
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
 }
 
-// --- HTML structure ---
-document.body.innerHTML = `
-  <h1> Annette's D2 Assignment </h1>
-`;
+// ✅ Factory functions instead of constructors
+const createMarkerLine = (
+  x: number,
+  y: number,
+  thickness: number,
+): MarkerLine => ({
+  points: [{ x, y }],
+  thickness,
+});
 
+const createSticker = (x: number, y: number, sticker: string): Sticker => ({
+  x,
+  y,
+  sticker,
+});
+
+const createStickerPreview = (
+  x: number,
+  y: number,
+  sticker: string,
+): StickerPreview => ({ x, y, sticker });
+
+const createToolPreview = (
+  x: number,
+  y: number,
+  thickness: number,
+): ToolPreview => ({ x, y, thickness });
+
+// ✅ Pure drawing functions — operate on data, not methods
+const drawSticker = (
+  ctx: CanvasRenderingContext2D,
+  s: Sticker | StickerPreview,
+) => {
+  ctx.font = "24px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(s.sticker, s.x, s.y);
+};
+
+const drawToolPreview = (ctx: CanvasRenderingContext2D, p: ToolPreview) => {
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, p.thickness / 2, 0, Math.PI * 2);
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+};
+
+const drawMarkerLine = (ctx: CanvasRenderingContext2D, line: MarkerLine) => {
+  if (line.points.length < 2) return;
+  ctx.beginPath();
+  ctx.moveTo(line.points[0].x, line.points[0].y);
+  for (let i = 1; i < line.points.length; i++) {
+    ctx.lineTo(line.points[i].x, line.points[i].y);
+  }
+  ctx.lineWidth = line.thickness;
+  ctx.lineCap = "round";
+  ctx.stroke();
+};
+
+// --- HTML structure ---
+document.body.innerHTML = `<h1>Annette's D2 Assignment</h1>`;
 const canvas = document.createElement("canvas");
 canvas.width = 256;
 canvas.height = 256;
 document.body.append(canvas);
-
 const ctx = canvas.getContext("2d")!;
 if (!ctx) throw new Error("Could not get 2D context");
 
-// --- Data model ---
-type Point = { x: number; y: number };
+// --- Data model (unchanged, but now uses structural types)
 const drawings: (MarkerLine | Sticker)[] = [];
 const redoStack: (MarkerLine | Sticker)[] = [];
-
 let currentStroke: MarkerLine | null = null;
 let currentThickness = 2;
 let currentSticker: string | null = null;
 let currentStickerPreview: StickerPreview | null = null;
 let currentPreview: ToolPreview | null = null;
-
 const cursor = { active: false, x: 0, y: 0 };
 
 // --- CANVAS EVENTS ---
@@ -119,13 +108,12 @@ canvas.addEventListener("mousedown", (e) => {
   cursor.active = true;
   cursor.x = e.offsetX;
   cursor.y = e.offsetY;
-
   if (currentSticker) {
-    drawings.push(new Sticker(cursor.x, cursor.y, currentSticker));
+    drawings.push(createSticker(cursor.x, cursor.y, currentSticker));
     canvas.dispatchEvent(new Event("drawing-changed"));
     cursor.active = false;
   } else {
-    currentStroke = new MarkerLine(cursor.x, cursor.y, currentThickness);
+    currentStroke = createMarkerLine(cursor.x, cursor.y, currentThickness);
     drawings.push(currentStroke);
     redoStack.length = 0;
     canvas.dispatchEvent(new Event("drawing-changed"));
@@ -135,19 +123,18 @@ canvas.addEventListener("mousedown", (e) => {
 canvas.addEventListener("mousemove", (e) => {
   cursor.x = e.offsetX;
   cursor.y = e.offsetY;
-
   if (cursor.active && currentStroke) {
-    currentStroke.drag(cursor.x, cursor.y);
+    currentStroke.points.push({ x: cursor.x, y: cursor.y });
     canvas.dispatchEvent(new Event("drawing-changed"));
   } else if (currentSticker) {
-    currentStickerPreview = new StickerPreview(
+    currentStickerPreview = createStickerPreview(
       cursor.x,
       cursor.y,
       currentSticker,
     );
     canvas.dispatchEvent(new Event("tool-moved"));
   } else {
-    currentPreview = new ToolPreview(cursor.x, cursor.y, currentThickness);
+    currentPreview = createToolPreview(cursor.x, cursor.y, currentThickness);
     canvas.dispatchEvent(new Event("tool-moved"));
   }
 });
@@ -163,32 +150,30 @@ canvas.style.cursor = "crosshair";
 function redraw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.lineCap = "round";
-
-  for (const stroke of drawings) {
-    stroke.display(ctx);
+  for (const drawing of drawings) {
+    if ("sticker" in drawing) {
+      drawSticker(ctx, drawing);
+    } else {
+      drawMarkerLine(ctx, drawing);
+    }
   }
-
   if (!cursor.active) {
-    if (currentStickerPreview) currentStickerPreview.draw(ctx);
-    else if (currentPreview) currentPreview.draw(ctx);
+    if (currentStickerPreview) drawSticker(ctx, currentStickerPreview);
+    else if (currentPreview) drawToolPreview(ctx, currentPreview);
   }
 }
 
 canvas.addEventListener("drawing-changed", redraw);
 canvas.addEventListener("tool-moved", redraw);
 
-// --- BUTTONS ---
-
-// Stickers
+// --- BUTTONS & LOGIC (unchanged except for DOM setup)
 const stickers = ["🦌", "👑", "🌙"];
 const stickerButtons: HTMLButtonElement[] = [];
-
 stickers.forEach((s) => {
   const btn = document.createElement("button");
   btn.textContent = s;
   document.body.append(btn);
   stickerButtons.push(btn);
-
   btn.addEventListener("click", () => {
     currentSticker = s;
     updateSelectedTool(btn);
@@ -196,29 +181,22 @@ stickers.forEach((s) => {
   });
 });
 
-// Marker thickness buttons
 const thinButton = document.createElement("button");
 thinButton.innerHTML = "thin";
 document.body.append(thinButton);
-
 const thickButton = document.createElement("button");
 thickButton.innerHTML = "thick";
 document.body.append(thickButton);
-
-// Control buttons
 const clearButton = document.createElement("button");
 clearButton.innerHTML = "clear";
 document.body.append(clearButton);
-
 const undoButton = document.createElement("button");
 undoButton.innerHTML = "undo";
 document.body.append(undoButton);
-
 const redoButton = document.createElement("button");
 redoButton.innerHTML = "redo";
 document.body.append(redoButton);
 
-// --- Button logic ---
 function updateSelectedTool(selectedButton: HTMLButtonElement) {
   document.querySelectorAll("button").forEach((b) =>
     b.classList.remove("selectedTool")
@@ -248,7 +226,7 @@ redoButton.addEventListener("click", () => {
 
 thinButton.addEventListener("click", () => {
   currentThickness = 2;
-  currentSticker = null; // exit sticker mode
+  currentSticker = null;
   currentStickerPreview = null;
   updateSelectedTool(thinButton);
   canvas.dispatchEvent(new Event("tool-moved"));
@@ -256,11 +234,10 @@ thinButton.addEventListener("click", () => {
 
 thickButton.addEventListener("click", () => {
   currentThickness = 6;
-  currentSticker = null; // exit sticker mode
+  currentSticker = null;
   currentStickerPreview = null;
   updateSelectedTool(thickButton);
   canvas.dispatchEvent(new Event("tool-moved"));
 });
 
-// Start with thin selected
 updateSelectedTool(thinButton);
