@@ -167,19 +167,51 @@ canvas.addEventListener("drawing-changed", redraw);
 canvas.addEventListener("tool-moved", redraw);
 
 // --- BUTTONS & LOGIC (unchanged except for DOM setup)
-const stickers = ["🦌", "👑", "🌙"];
+// --- DATA-DRIVEN STICKERS ---
+
+// Start with a single array that defines all available stickers
+const stickers: string[] = ["🦌", "👑", "🌙"];
+
+// Container for all sticker buttons
 const stickerButtons: HTMLButtonElement[] = [];
-stickers.forEach((s) => {
-  const btn = document.createElement("button");
-  btn.textContent = s;
-  document.body.append(btn);
-  stickerButtons.push(btn);
-  btn.addEventListener("click", () => {
-    currentSticker = s;
-    updateSelectedTool(btn);
-    canvas.dispatchEvent(new Event("tool-moved"));
+
+// Function to (re)render all sticker buttons dynamically
+function renderStickerButtons() {
+  // Remove old sticker buttons before re-creating them
+  stickerButtons.forEach((b) => b.remove());
+  stickerButtons.length = 0;
+
+  // Create a button for each sticker in the array
+  stickers.forEach((s) => {
+    const btn = document.createElement("button");
+    btn.textContent = s;
+    document.body.append(btn);
+    stickerButtons.push(btn);
+
+    btn.addEventListener("click", () => {
+      currentSticker = s;
+      updateSelectedTool(btn);
+      canvas.dispatchEvent(new Event("tool-moved"));
+    });
   });
+}
+
+// --- ADD CUSTOM STICKER BUTTON ---
+const customStickerButton = document.createElement("button");
+customStickerButton.textContent = "+ Custom Sticker";
+document.body.append(customStickerButton);
+
+// When clicked, prompt user and add new sticker
+customStickerButton.addEventListener("click", () => {
+  const text = prompt("Custom sticker text", "🐇");
+  if (text && text.trim().length > 0) {
+    stickers.push(text);
+    renderStickerButtons(); // re-render to include new sticker
+  }
 });
+
+// Initial render
+renderStickerButtons();
 
 const thinButton = document.createElement("button");
 thinButton.innerHTML = "thin";
