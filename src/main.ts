@@ -53,7 +53,7 @@ const createToolPreview = (
   thickness: number,
 ): ToolPreview => ({ x, y, thickness });
 
-// ✅ Pure drawing functions — operate on data, not methods
+// Pure drawing functions — operate on data, not methods
 const drawSticker = (
   ctx: CanvasRenderingContext2D,
   s: Sticker | StickerPreview,
@@ -273,3 +273,35 @@ thickButton.addEventListener("click", () => {
 });
 
 updateSelectedTool(thinButton);
+
+// --- EXPORT BUTTON ---
+const exportButton = document.createElement("button");
+exportButton.innerHTML = "export";
+document.body.append(exportButton);
+
+exportButton.addEventListener("click", () => {
+  // 1️⃣ Create a new canvas 4x larger
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = 1024;
+  exportCanvas.height = 1024;
+  const exportCtx = exportCanvas.getContext("2d")!;
+  if (!exportCtx) throw new Error("Could not get export context");
+
+  // 2️⃣ Scale up so existing drawings fill the larger canvas
+  exportCtx.scale(4, 4); // because 1024 / 256 = 4
+
+  // 3️⃣ Redraw all items on the export canvas (no previews)
+  for (const drawing of drawings) {
+    if ("sticker" in drawing) {
+      drawSticker(exportCtx, drawing);
+    } else {
+      drawMarkerLine(exportCtx, drawing);
+    }
+  }
+
+  // 4️⃣ Trigger download of the canvas as a PNG
+  const anchor = document.createElement("a");
+  anchor.href = exportCanvas.toDataURL("image/png");
+  anchor.download = "sketchpad.png";
+  anchor.click();
+});
