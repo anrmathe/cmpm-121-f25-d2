@@ -58,7 +58,7 @@ const drawSticker = (
   ctx: CanvasRenderingContext2D,
   s: Sticker | StickerPreview,
 ) => {
-  ctx.font = "24px sans-serif";
+  ctx.font = "36px sans-serif"; // was 24px — feels better for touch
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(s.sticker, s.x, s.y);
@@ -257,7 +257,7 @@ redoButton.addEventListener("click", () => {
 });
 
 thinButton.addEventListener("click", () => {
-  currentThickness = 2;
+  currentThickness = 3;
   currentSticker = null;
   currentStickerPreview = null;
   updateSelectedTool(thinButton);
@@ -265,7 +265,7 @@ thinButton.addEventListener("click", () => {
 });
 
 thickButton.addEventListener("click", () => {
-  currentThickness = 6;
+  currentThickness = 10;
   currentSticker = null;
   currentStickerPreview = null;
   updateSelectedTool(thickButton);

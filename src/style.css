@@ -1,32 +1,38 @@
-.icon {
-  width: 64px;
-  vertical-align: top;
-  border: 1px solid salmon;
+body {
+  font-family: "Poppins", sans-serif;
+  text-align: center;
+  background: linear-gradient(135deg, #fefefe, #f5f7fa);
 }
+
+h1 {
+  font-size: 1.4rem;
+  margin-bottom: 10px;
+}
+
 canvas {
-  border: thin solid black;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  display: block;
+  border: 2px solid #333;
+  border-radius: 8px;
+  background-color: #fff;
+  margin-bottom: 12px;
+  touch-action: none; /* better drawing on touchscreen */
 }
 
 button {
   margin: 4px;
-  padding: 6px 12px;
+  padding: 6px 10px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #f3f3f3;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background: #e8e8e8;
 }
 
 .selectedTool {
-  background-color: lightblue;
-  border: 2px solid blue;
-}
-.thicknessButton {
-  margin: 2px;
-  padding: 4px 8px;
-}
-.selectedThickness {
-  background-color: lightgreen;
-  border: 2px solid green;
-}
-.thicknessContainer {
-  margin-top: 8px;
+  background: #a0c4ff;
+  border-color: #0077ff;
+  font-weight: bold;
 }
