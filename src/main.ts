@@ -8,7 +8,9 @@ interface Point {
 interface MarkerLine {
   points: Point[];
   thickness: number;
+  color: string;
 }
+
 interface Sticker {
   x: number;
   y: number;
@@ -25,14 +27,16 @@ interface ToolPreview {
   thickness: number;
 }
 
-// ✅ Factory functions instead of constructors
+// Factory functions instead of constructors
 const createMarkerLine = (
   x: number,
   y: number,
   thickness: number,
+  color: string,
 ): MarkerLine => ({
   points: [{ x, y }],
   thickness,
+  color,
 });
 
 const createSticker = (x: number, y: number, sticker: string): Sticker => ({
@@ -67,6 +71,8 @@ const drawSticker = (
 const drawToolPreview = (ctx: CanvasRenderingContext2D, p: ToolPreview) => {
   ctx.beginPath();
   ctx.arc(p.x, p.y, p.thickness / 2, 0, Math.PI * 2);
+  ctx.fillStyle = currentColor;
+  ctx.fill();
   ctx.strokeStyle = "black";
   ctx.lineWidth = 1;
   ctx.stroke();
@@ -81,6 +87,7 @@ const drawMarkerLine = (ctx: CanvasRenderingContext2D, line: MarkerLine) => {
   }
   ctx.lineWidth = line.thickness;
   ctx.lineCap = "round";
+  ctx.strokeStyle = line.color;
   ctx.stroke();
 };
 
@@ -101,6 +108,7 @@ let currentThickness = 2;
 let currentSticker: string | null = null;
 let currentStickerPreview: StickerPreview | null = null;
 let currentPreview: ToolPreview | null = null;
+
 const cursor = { active: false, x: 0, y: 0 };
 
 // --- CANVAS EVENTS ---
@@ -113,7 +121,13 @@ canvas.addEventListener("mousedown", (e) => {
     canvas.dispatchEvent(new Event("drawing-changed"));
     cursor.active = false;
   } else {
-    currentStroke = createMarkerLine(cursor.x, cursor.y, currentThickness);
+    currentStroke = createMarkerLine(
+      cursor.x,
+      cursor.y,
+      currentThickness,
+      currentColor,
+    );
+
     drawings.push(currentStroke);
     redoStack.length = 0;
     canvas.dispatchEvent(new Event("drawing-changed"));
@@ -220,6 +234,44 @@ const thickButton = document.createElement("button");
 thickButton.innerHTML = "thick";
 document.body.append(thickButton);
 const clearButton = document.createElement("button");
+
+// --- COLOR CONTROLS ---
+const hueLabel = document.createElement("label");
+hueLabel.textContent = "Hue:";
+document.body.append(hueLabel);
+
+const hueSlider = document.createElement("input");
+hueSlider.type = "range";
+hueSlider.min = "0";
+hueSlider.max = "360";
+hueSlider.value = "200";
+document.body.append(hueSlider);
+
+const brightnessLabel = document.createElement("label");
+brightnessLabel.textContent = " Brightness:";
+document.body.append(brightnessLabel);
+
+const brightnessSlider = document.createElement("input");
+brightnessSlider.type = "range";
+brightnessSlider.min = "30";
+brightnessSlider.max = "90";
+brightnessSlider.value = "60";
+document.body.append(brightnessSlider);
+
+let currentHue = parseInt(hueSlider.value);
+let currentBrightness = parseInt(brightnessSlider.value);
+let currentColor = `hsl(${currentHue}, 80%, ${currentBrightness}%)`;
+
+function updateColor() {
+  currentHue = parseInt(hueSlider.value);
+  currentBrightness = parseInt(brightnessSlider.value);
+  currentColor = `hsl(${currentHue}, 80%, ${currentBrightness}%)`;
+  canvas.dispatchEvent(new Event("tool-moved")); // refresh preview
+}
+
+hueSlider.addEventListener("input", updateColor);
+brightnessSlider.addEventListener("input", updateColor);
+
 clearButton.innerHTML = "clear";
 document.body.append(clearButton);
 const undoButton = document.createElement("button");
